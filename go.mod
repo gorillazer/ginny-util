@@ -1,3 +1,3 @@
-module github.com/gorillazer/ginny-util
+module github.com/goriller/ginny-util
 
 go 1.16
