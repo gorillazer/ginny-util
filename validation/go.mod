@@ -1,4 +1,4 @@
-module ginny-util/validation
+module github.com/goriller/ginny-util/validation
 
 go 1.16
 
