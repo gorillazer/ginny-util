@@ -51,6 +51,7 @@ func ConcurrencyRetryCallFunc(ctx context.Context, fs map[string]ExeFunc,
 }
 
 // RetryCallFunc
+// retry  retryTimes, retryPeriod, timeout
 func RetryCallFunc(ctx context.Context, fn ExeFunc,
 	params interface{}, retry ...int) (interface{}, error) {
 	var (
@@ -58,6 +59,7 @@ func RetryCallFunc(ctx context.Context, fn ExeFunc,
 		result      interface{}
 		retryTimes  int = 1
 		retryPeriod     = 100 * time.Millisecond
+		timeout         = time.Millisecond * 600000 // 单次最大时长默认10分钟
 	)
 	l := len(retry)
 	if l == 1 {
@@ -71,10 +73,20 @@ func RetryCallFunc(ctx context.Context, fn ExeFunc,
 		if retry[1] > 0 {
 			retryPeriod = time.Duration(retry[1]) * time.Millisecond
 		}
+	} else if l == 3 {
+		if retry[0] > 0 {
+			retryTimes = retry[0]
+		}
+		if retry[1] > 0 {
+			retryPeriod = time.Duration(retry[1]) * time.Millisecond
+		}
+		if retry[2] > 0 {
+			timeout = time.Duration(retry[2]) * time.Millisecond
+		}
 	}
 
 	num := 0
-	o := time.After(time.Second * 30)
+	o := time.After(timeout)
 	t := time.NewTicker(retryPeriod)
 	defer t.Stop()
 	for range t.C {
@@ -82,22 +94,17 @@ func RetryCallFunc(ctx context.Context, fn ExeFunc,
 		case <-o:
 			return nil, fmt.Errorf("call function context deadline exceeded, params: [%+v]", params)
 		default:
-			num++
-			result, err = fn(ctx, params)
-			if err != nil {
-				if num < retryTimes {
-					time.Sleep(retryPeriod)
-					continue
-				} else {
-					return nil, fmt.Errorf("err:[%v]", err.Error())
-				}
-			}
-			return result, nil
 		}
-	}
-
-	if err != nil {
-		return nil, err
+		num++
+		result, err = fn(ctx, params)
+		if err != nil {
+			if num < retryTimes {
+				time.Sleep(retryPeriod)
+				continue
+			}
+			return nil, fmt.Errorf("err:[%v]", err.Error())
+		}
+		break
 	}
 	return result, nil
 }
