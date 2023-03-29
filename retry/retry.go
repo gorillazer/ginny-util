@@ -73,7 +73,7 @@ func RetryCallFunc(ctx context.Context, fn ExeFunc,
 		if retry[1] > 0 {
 			retryPeriod = time.Duration(retry[1]) * time.Millisecond
 		}
-	} else if l == 3 {
+	} else if l > 2 {
 		if retry[0] > 0 {
 			retryTimes = retry[0]
 		}
